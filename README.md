@@ -1,0 +1,139 @@
+# APNs Send
+
+The apns-send npm package enables seamless integration of push notifications using the Apple Push Notification service (APNs) with the HTTP/2 protocol.
+
+---
+
+## Create Client
+
+Create an APNS client using a signing key:
+
+```typescript
+import { ApnsClient } from 'apns-send'
+
+const client = new ApnsClient({
+  team: `TFLP87PW54`,
+  keyId: `123ABC456`,
+  signingKey: fs.readFileSync(`${__dirname}/path/to/auth.p8`),
+  defaultTopic: `com.tablelist.Tablelist`,
+})
+```
+
+## Sending Notifications
+
+#### Basic
+
+Send a basic notification with message:
+
+```typescript
+import { Notification } from 'apns-send'
+
+const bn = new Notification(deviceToken, { alert: 'Hello, World' })
+
+try {
+  await client.send(bn)
+} catch (err) {
+  console.error(err.reason)
+}
+```
+
+Send a basic notification with message and options:
+
+```typescript
+import { Notification } from 'apns-send'
+
+const bn = new Notification(deviceToken, {
+  alert: 'Hello, World',
+  badge: 4,
+  data: {
+    userId: user.getUserId,
+  },
+})
+
+try {
+  await client.send(bn)
+} catch (err) {
+  console.error(err.reason)
+}
+```
+
+#### Silent
+
+Send a silent notification using `content-available` key:
+
+```typescript
+import { SilentNotification } from 'apns-send'
+
+const sn = new SilentNotification(deviceToken)
+
+try {
+  await client.send(sn)
+} catch (err) {
+  console.error(err.reason)
+}
+```
+
+Note: [Apple recommends](https://developer.apple.com/documentation/usernotifications/setting_up_a_remote_notification_server/pushing_background_updates_to_your_app#2980040) that no options other than the `content-available` flag be sent in order for a notification to truly be silent and wake up your app in the background. Therefore this class does not accept any additional options in the constructor.
+
+#### Many
+
+Send multiple notifications concurrently:
+
+```typescript
+import { Notification } from 'apns-send'
+
+const notifications = [
+  new Notification(deviceToken1, { alert: 'Hello, World' }),
+  new Notification(deviceToken2, { alert: 'Hello, World' }),
+]
+
+try {
+  await client.sendMany(notifications)
+} catch (err) {
+  console.error(err.reason)
+}
+```
+
+#### Advanced
+
+For complete control over the push notification packet use the base `Notification` class:
+
+```typescript
+import { Notification } from 'apns-send'
+
+const notification = new Notification(deviceToken, {
+  aps: { ... }
+})
+
+try {
+  await client.send(notification)
+} catch(err) {
+  console.error(err.reason)
+}
+```
+
+Available options can be found at [APNS Payload Options](https://developer.apple.com/documentation/usernotifications/setting_up_a_remote_notification_server/generating_a_remote_notification#2943363)
+
+## Error Handling
+
+All errors are defined in `./lib/errors.js` and come directly from [APNS Table 4](https://developer.apple.com/documentation/usernotifications/setting_up_a_remote_notification_server/handling_notification_responses_from_apns#3394535)
+
+## Environments
+
+By default the APNS client connects to the production push notification server. This is identical to passing in the options:
+
+```typescript
+const client = new ApnsClient({
+  host: 'api.push.apple.com'
+  ...
+})
+```
+
+To connect to the development push notification server, pass the options:
+
+```typescript
+const client = new ApnsClient({
+  host: 'api.sandbox.push.apple.com'
+  ...
+})
+```
